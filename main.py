@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/parse-results")
+@app.post("/")
 async def parse_track_results(
     file: UploadFile = File(...),
     meetDate: str = Form(...),
