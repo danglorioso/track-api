@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import tempfile
 import shutil
-from .parse_file import parse_results
+from parse_file import parse_results
 
 app = FastAPI()
 

@@ -6,8 +6,8 @@ import sys
 from typing import List, Dict
 from rapidfuzz import fuzz, process
 
-from .standard_events import STANDARD_EVENTS
-from .standard_schools import STANDARD_SCHOOLS
+from standard_events import STANDARD_EVENTS
+from standard_schools import STANDARD_SCHOOLS
 
 def normalize_event(event_name: str, review_bool: bool) -> str:
     """
