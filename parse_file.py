@@ -3,6 +3,7 @@ import re
 import csv
 import io
 import sys
+import os
 from typing import List, Dict
 from rapidfuzz import fuzz, process
 
@@ -55,7 +56,7 @@ def normalize_school(school_name: str, review_bool: bool) -> str:
         str: The standardized school name if a match is found, otherwise the original name.
     """
     # Initialize best match and score variables
-    bset_match = ""
+    best_match = ""
     best_score = 0
 
     for standard_school, alternatives in STANDARD_SCHOOLS.items():
@@ -75,7 +76,7 @@ def normalize_school(school_name: str, review_bool: bool) -> str:
         # Return original if no close match found
         return school_name, True
 
-def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
+def parse_results(file_path: str, metadata: Dict[str, str]) -> str:
     """
     Main function for parsing the track meet results and generate a structured CSV.
     
@@ -83,6 +84,9 @@ def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
         file_path (str): Path to the input text file.
         metadata (Dict[str, str]): Dictionary of constant metadata to include
             in each row that was inputted on web app upon file upload.
+            
+    Returns:
+        str: Path to the output CSV file.
     """
     
     # Define output columns
@@ -157,13 +161,17 @@ def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
                 result_match = result_pattern.search(line)
 
                 # Result detected
-                if result_match:
+                if result_match and current_event:  # Only process if we have a valid event
                     # Extract result fields
                     place, full_name, grade, school, mark, heat, wind, points = result_match.groups()
 
                     # Parse full name into last and first names
-                    if len(full_name.split()) > 1:
-                        last_name, first_name = parse_name(full_name)
+                    last_name, first_name = "", ""
+                    if full_name:
+                        if len(full_name.split()) > 1:
+                            last_name, first_name = parse_name(full_name)
+                        else:
+                            last_name = full_name
 
                     print(f"Place: {place}, Name: {full_name}, Grade: {grade}, School: {school}, Mark: {mark}, Heat: {heat}, Wind: {wind}, Points: {points}")
 
@@ -194,14 +202,20 @@ def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
     for row in rows:
         row.update(metadata)
     
+    # Create a unique output file name using a timestamp
+    import tempfile
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    output_file = os.path.join(tempfile.gettempdir(), f"results_{timestamp}.csv")
+    
     # Write output to CSV
-    output_file = "output.csv"
     with open(output_file, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=columns)
         writer.writeheader()
         writer.writerows(rows)
     
     print(f"Processed results saved to {output_file}")
+    return output_file
 
 def parse_name(full_name: str):
     """
@@ -229,27 +243,5 @@ def parse_name(full_name: str):
         # Return the first name as the first word and last name as everything else
         if len(parts) > 1:
             return " ".join(parts[1:]), parts[0]
-
-# if __name__ == "__main__":
-#     '''
-#     Main function to parse the results file.
-#     '''
-
-#     # Check for file path argument
-#     if len(sys.argv) < 2:
-#         print("Usage: python3 parse_file.py <results_file>")
-#         sys.exit(1)
-    
-#     # Example metadata
-#     metadata = {
-#         "Meet Date": "2023-01-01",
-#         "Meet Location": "Sample Location",
-#         "Edition": "1st",
-#         "Meet Name": "Sample Meet",
-#         "Timing": "FAT",
-#         "URL": "http://example.com",
-#         "Season": "Indoor"
-#     }
-
-#     # Call main function to parse results
-#     parse_results(sys.argv[1], metadata)
+        else:
+            return full_name, ""  # Return full name as last name if there's only one part

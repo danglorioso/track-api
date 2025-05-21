@@ -1,21 +1,23 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import tempfile
 import shutil
+import os
 from parse_file import parse_results
 
 app = FastAPI()
 
-# Optional CORS setup for frontend to call this from anywhere
+# CORS setup for frontend to call this from anywhere
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change this to ["http://localhost:3000"] in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# POST endpoint to handle main functionality
 @app.post("/")
 async def parse_track_results(
     file: UploadFile = File(...),
@@ -44,10 +46,35 @@ async def parse_track_results(
             "Timing": timing
         }
 
-        # Call your existing parser
-        parse_results(tmp_path, metadata)
+        # Call parser and get the output file path
+        output_file = parse_results(tmp_path, metadata)
 
-        return {"success": True, "message": "File parsed successfully"}
+        # Clean up the temporary file
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+        # Read the output CSV file
+        with open(output_file, "rb") as csv_file:
+            csv_content = csv_file.read()
+        
+        # Clean up the output file
+        if os.path.exists(output_file):
+            os.unlink(output_file)
+
+        # Return the CSV file for download
+        filename = f"{meetName.replace(' ', '_')}_results.csv"
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
     
     except Exception as e:
         return {"success": False, "error": str(e)}
+    
+# Simple GET endpoint for testing
+@app.get("/")
+async def health_check():
+    return {"status": "API is running"}
