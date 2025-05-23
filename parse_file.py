@@ -466,27 +466,3 @@ def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
     except Exception as e:
         print(f"Error writing CSV file: {e}")
         sys.exit(1)
-
-if __name__ == "__main__":
-    '''
-    Main function to parse the results file.
-    '''
-
-    # Check for file path argument
-    if len(sys.argv) < 2:
-        print("Usage: python3 parse_file.py <results_file>")
-        sys.exit(1)
-    
-    # Example metadata - you can modify this or make it configurable
-    metadata = {
-        "Meet Date": "2023-01-01",
-        "Meet Location": "Sample Location",
-        "Edition": "1st",
-        "Meet Name": "Sample Meet",
-        "Timing": "FAT",
-        "URL": "http://example.com",
-        "Season": "Indoor"
-    }
-
-    # Call main function to parse results
-    parse_results(sys.argv[1], metadata)
