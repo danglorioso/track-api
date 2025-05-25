@@ -678,6 +678,10 @@ def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
             writer.writerows(rows)
         
         print(f"Processed {len(rows)} results saved to {output_file}")
+
+        # Return the output file path
+        return output_file
+
     except Exception as e:
         print(f"Error writing CSV file: {e}")
         sys.exit(1)
