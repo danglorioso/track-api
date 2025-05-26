@@ -116,13 +116,13 @@ def extract_gender_from_event(event_line: str) -> str:
         event_line (str): The event line containing gender information.
         
     Returns:
-        str: "M" for male/boys, "F" for female/girls, or "" if not found.
+        str: "Boys" for male/boys, "Girls" for female/girls, or "" if not found.
     """
     line_lower = event_line.lower()
-    if any(word in line_lower for word in ["boys", "boy", "men", "male"]):
-        return "M"
-    elif any(word in line_lower for word in ["girls", "girl", "women", "female"]):
-        return "F"
+    if any(word in line_lower for word in ["boys", "boy", "men", "male", "m"]):
+        return "Boys"
+    elif any(word in line_lower for word in ["girls", "girl", "women", "female", "f"]):
+        return "Girls"
     return ""
 
 def extract_round_from_line(line: str) -> str:
@@ -235,10 +235,12 @@ def parse_result_line_with_columns(line: str, column_map: Dict[str, int]) -> Dic
 
     line = line.strip()
     if not line or line.startswith("=") or line.startswith("-"):
+        print("Tripping review flag due to empty line or header")
         result["review"] = True
         return result
 
     if len(line.split()) < 3:
+        print("Tripping review flag due to too few columns")
         result["review"] = True
         return result
 
@@ -290,6 +292,7 @@ def parse_result_line_with_columns(line: str, column_map: Dict[str, int]) -> Dic
                 if not matched:
                     # If recovery fails, mark as review and continue
                     print(f"[DEBUG] Could not match '{segment}' for column '{col}'")
+                    print("Tripping review flag due to unmatched segment")
                     result["review"] = True
                     break
                 i += 1
@@ -304,14 +307,17 @@ def parse_result_line_with_columns(line: str, column_map: Dict[str, int]) -> Dic
             if re.match(pattern, segment):
                 result[col] = segment
             else:
+                print("Tripping review flag due to unmatched leftover segment")
                 result["review"] = True
 
         # Final validation
         if not result["place"] or not result["mark"]:
+            print("Tripping review flag due to missing place or mark")
             result["review"] = True
 
     except Exception as e:
         print(f"[ERROR] parse_result_line_with_columns failed on line: {line} — {e}")
+        print("Tripping review flag due to exception")
         result["review"] = True
 
     print(f"[DEBUG] Final parsed result: {result}")
@@ -401,6 +407,7 @@ def parse_with_fallback_logic(line: str, column_map: Dict[str, int]) -> Dict[str
             
             break
     else:
+        print("Tripping review flag due to no match in parse_with_fallback_logic")
         result["review"] = True
     
     return result
@@ -437,6 +444,7 @@ def parse_result_line(line: str, column_map: Dict[str, int] = None) -> Dict[str,
     # Clean the line
     line = line.strip()
     if not line or line.startswith("=") or line.startswith("-"):
+        print("Tripping review flag due to empty line or header without column map")
         result["review"] = True
         return result
     
@@ -505,6 +513,7 @@ def parse_result_line(line: str, column_map: Dict[str, int] = None) -> Dict[str,
             break
     
     if not matched:
+        print("Tripping review flag due to no match in parse_result_line")
         result["review"] = True
     
     return result
@@ -566,19 +575,19 @@ def parse_results(file_path: str, metadata: Dict[str, str]) -> None:
                     
                     # Determine gender and event name based on pattern
                     if len(groups) == 2:
-                        if groups[0].lower() in ['boys', 'boy']:
-                            current_gender = "M"
+                        if groups[0].lower() in ['boys', 'boy', "M"]:
+                            current_gender = "Boys"
                             raw_event_name = groups[1].strip()
-                        elif groups[0].lower() in ['girls', 'girl']:
-                            current_gender = "F"
+                        elif groups[0].lower() in ['girls', 'girl', "F"]:
+                            current_gender = "Girls"
                             raw_event_name = groups[1].strip()
                         else:
                             # Try the reverse
-                            if groups[1].lower() in ['boys', 'boy']:
-                                current_gender = "M"
+                            if groups[1].lower() in ['boys', 'boy', "M"]:
+                                current_gender = "Boys"
                                 raw_event_name = groups[0].strip()
-                            elif groups[1].lower() in ['girls', 'girl']:
-                                current_gender = "F"
+                            elif groups[1].lower() in ['girls', 'girl', "F"]:
+                                current_gender = "Girls"
                                 raw_event_name = groups[0].strip()
                             else:
                                 current_gender = extract_gender_from_event(line)
